@@ -4,6 +4,6 @@ import androidx.compose.runtime.Composable
 
 //Pantalla Principal
 @Composable
-fun TaskScreen(){
+fun TaskScreen(taskViewModel: TaskViewModel) {
 
 }
