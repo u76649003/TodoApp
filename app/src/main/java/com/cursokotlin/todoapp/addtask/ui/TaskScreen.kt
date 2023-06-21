@@ -6,6 +6,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,29 +18,34 @@ import androidx.compose.ui.window.Dialog
 //Pantalla Principal
 @Composable
 fun TaskScreen(taskViewModel: TaskViewModel) {
+    val showDialog: Boolean by taskViewModel.showDialog.observeAsState(initial = false)
+
     Box(modifier = Modifier.fillMaxSize()) {
-        AddTasksDialog(show=true, onDismiss = {}, onTaskAdded = {})
+        AddTasksDialog(
+            show = showDialog,
+            onDismiss = { taskViewModel.onDialogClose() },
+            onTaskAdded = { taskViewModel.onTaskCreated(it) })
         FabDialog(
             Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp)
+                .padding(16.dp), taskViewModel
 
         )
     }
 }
 
 @Composable
-fun FabDialog(modifier: Modifier) {
+fun FabDialog(modifier: Modifier, taskViewModel: TaskViewModel) {
     //Boton de abajo a la derecha
     FloatingActionButton(onClick = { //dialogo
-
+        taskViewModel.onShowDialogClick()
     }, modifier = modifier) {
         Icon(Icons.Filled.Add, contentDescription = "")
     }
 }
 
 @Composable
-fun AddTasksDialog(show: Boolean, onDismiss: () -> Unit, onTaskAdded:(String) -> Unit) {
+fun AddTasksDialog(show: Boolean, onDismiss: () -> Unit, onTaskAdded: (String) -> Unit) {
     var myTask by remember { mutableStateOf("") }
     if (show) {
         Dialog(onDismissRequest = { onDismiss() }) {
@@ -47,7 +53,8 @@ fun AddTasksDialog(show: Boolean, onDismiss: () -> Unit, onTaskAdded:(String) ->
                 Modifier
                     .fillMaxWidth()
                     .background(Color.White)
-                    .padding(16.dp)) {
+                    .padding(16.dp)
+            ) {
                 Text(
                     "Añade tu tarea",
                     fontSize = 18.sp,
