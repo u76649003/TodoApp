@@ -1,7 +1,11 @@
 package com.cursokotlin.todoapp.addtask.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -10,10 +14,12 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.cursokotlin.todoapp.addtask.ui.model.TaskModel
 
 //Pantalla Principal
 @Composable
@@ -29,9 +35,51 @@ fun TaskScreen(taskViewModel: TaskViewModel) {
             Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp), taskViewModel
-
         )
+        TaskList(taskViewModel)
     }
+}
+
+@Composable
+fun TaskList(taskViewModel: TaskViewModel) {
+    //se va ir llamando cada vez que modifiquemos la lista
+    val myTasks: List<TaskModel> = taskViewModel.task
+    LazyColumn {
+        //el parametro key ayuda a optimizar el recyclerView y o los LazyColumn
+        items(myTasks, key = { it.id }) { task ->
+            ItemTask(taskModel = task, taskViewModel = taskViewModel)
+        }
+    }
+}
+
+@Composable
+fun ItemTask(taskModel: TaskModel, taskViewModel: TaskViewModel) {
+    Card(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .pointerInput(Unit) {
+                //Aqui dentro controlamos distintos tipos de click
+                // Un metodo que controla el doble click, el pulsado,etc
+                //onDoubleTap doble click, onLongPress pulsado, onPress pulsar
+                detectTapGestures(onLongPress = {
+                    taskViewModel.onItemRemove(taskModel)
+                })
+            },
+        elevation = 8.dp
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = taskModel.task, modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 4.dp)
+            )
+            Checkbox(
+                checked = taskModel.selected,
+                onCheckedChange = { taskViewModel.onCheckBoxSelected(taskModel) })
+        }
+    }
+
 }
 
 @Composable
@@ -67,6 +115,8 @@ fun AddTasksDialog(show: Boolean, onDismiss: () -> Unit, onTaskAdded: (String) -
                 Button(onClick = {
                     //Mandar tarea
                     onTaskAdded(myTask)
+                    //Limpiar caja de texto
+                    myTask = ""
                 }, modifier = Modifier.fillMaxWidth()) {
                     Text(text = "Añadir tarea")
                 }
