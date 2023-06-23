@@ -13,7 +13,7 @@ class TaskRepository @Inject constructor(private val taskDao: TaskDao){
     //Como leemos con flow, ya que un flow es una comunicacion continua
     //un .map recorre la lista y esto devuelve unos items
     //Esto hara que solo la capa de taskEntity solo lo vea el data
-    val task: Flow<List<TaskModel>> = taskDao.getTask().map { items -> items.map {TaskModel(it.id, it.task, it.selected)}}
+    val tasks: Flow<List<TaskModel>> = taskDao.getTask().map { items -> items.map {TaskModel(it.id, it.task, it.selected)}}
 
     //Recibo el modelo de la vista y creo el objeto entity para guardarlo en BBDD
     suspend fun add(taskModel: TaskModel){

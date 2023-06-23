@@ -1,16 +1,26 @@
 package com.cursokotlin.todoapp.addtask.ui
 
-import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.cursokotlin.todoapp.addtask.domain.AddTaskUseCase
+import com.cursokotlin.todoapp.addtask.domain.GetTasksUseCase
+import com.cursokotlin.todoapp.addtask.ui.TaskUiState.Success
 import com.cursokotlin.todoapp.addtask.ui.model.TaskModel
-import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 
-class TaskViewModel @Inject constructor():ViewModel() {
+class TaskViewModel @Inject constructor(
+    private val addTaskUseCase: AddTaskUseCase,
+    getTasksUseCase: GetTasksUseCase
+):ViewModel() {
 
+    //tiene que consumir el caso de uso
+    val uiState: StateFlow<TaskUiState> = getTasksUseCase().map(::Success)
+        .catch { TaskUiState.Error(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TaskUiState.Loading)
 
     private val _showDialog = MutableLiveData<Boolean>()
     val showDialog:LiveData<Boolean> = _showDialog
