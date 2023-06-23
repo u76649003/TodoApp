@@ -1,7 +1,6 @@
 package com.cursokotlin.todoapp.addtask.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,38 +14,69 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.cursokotlin.todoapp.addtask.ui.model.TaskModel
 
 //Pantalla Principal
 @Composable
 fun TaskScreen(taskViewModel: TaskViewModel) {
     val showDialog: Boolean by taskViewModel.showDialog.observeAsState(initial = false)
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        AddTasksDialog(
-            show = showDialog,
-            onDismiss = { taskViewModel.onDialogClose() },
-            onTaskAdded = { taskViewModel.onTaskCreated(it) })
-        FabDialog(
-            Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp), taskViewModel
-        )
-        TaskList(taskViewModel)
+    //Creamos el ciclo de vida para el state flow
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    //Nos creamos un estado, creandonos un estado permanente de la app
+    val uiState by produceState<TaskUiState>(
+        initialValue = TaskUiState.Loading,
+        key1 = lifecycle,
+        key2 = taskViewModel
+    ) {
+        //mientra este empezado, siempre este consumiendo datos
+        lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED){
+            //Aqui coletear los flows
+            //Hay que hacer un collect para recuperar los valores
+            taskViewModel.uiState.collect{
+                //value es el uiState, se este actualizando constantemente
+                value = it
+            }
+        }
     }
+
+    when(uiState){
+        is TaskUiState.Error -> {}
+        TaskUiState.Loading -> {}
+        is TaskUiState.Success -> {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AddTasksDialog(
+                    show = showDialog,
+                    onDismiss = { taskViewModel.onDialogClose() },
+                    onTaskAdded = { taskViewModel.onTaskCreated(it) })
+                FabDialog(
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp), taskViewModel
+                )
+                TaskList((uiState as TaskUiState.Success).tasks, taskViewModel)
+            }
+        }
+    }
+
+
+
+
 }
 
 @Composable
-fun TaskList(taskViewModel: TaskViewModel) {
+fun TaskList(tasks: List<TaskModel>, taskViewModel: TaskViewModel) {
     //se va ir llamando cada vez que modifiquemos la lista
-    val myTasks: List<TaskModel> = taskViewModel.task
+    // val myTasks: List<TaskModel> = taskViewModel.task no hace falta el del viewModel, siempre los valores de la BBDD
     LazyColumn {
         //el parametro key ayuda a optimizar el recyclerView y o los LazyColumn
-        items(myTasks, key = { it.id }) { task ->
+        items(tasks, key = { it.id }) { task ->
             ItemTask(taskModel = task, taskViewModel = taskViewModel)
         }
     }
